@@ -12,6 +12,20 @@
 ;;TODO try to make the search go task by task to see if its faster ::not optimal but is a good alternative method
 ;;TODO change list to array to see if its faster
 
+;;tested
+(defun problema-to-estado (problema)
+  (let ((lista-jobs '())
+    (lista-tarefas '())
+    (tmp '()))
+    (setf *nrJobs* (job-shop-problem-n.jobs problema))
+    (dotimes (nrJob *nrJobs*)
+      (setf tmp (nth nrJob (job-shop-problem-jobs problema)))
+      (setf lista-tarefas (job-shop-job-tasks tmp))
+      (push lista-tarefas lista-jobs))
+    (setf lista-jobs (reverse lista-jobs))
+    (return-from problema-to-estado (list lista-jobs (make-list (job-shop-problem-n.machines problema))))))
+
+
 
 ;;;Tested
 (defun estado-tarefa (estado nrJob nrTask)
