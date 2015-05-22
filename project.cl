@@ -21,7 +21,8 @@
                     :objectivo? #'fnc-objetivo
                     :estado= #'equalp
                     :hash #'hash))
-     (if (equalp procura 'profundidade) (setf resultado (procura problema procura :profundidade-maxima 6 :espaco-em-arvore? t)))))
+     (if (equalp procura 'profundidade) (setf resultado (procura problema procura :espaco-em-arvore? t)))
+     (setf resultado (procura problema procura :espaco-em-arvore? t))))
 
 
 
