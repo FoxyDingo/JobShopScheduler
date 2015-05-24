@@ -1,14 +1,17 @@
 (in-package :user)
 
-;; state representation : ( ( ( (JB1.task1) (JB1.task2) ) ( (JB2.task1) ) ) (MST1 MST2 MST3))
-;;MSTx -> int to represent the maximum start time for a given machine
- 
-;;TODO try to make the search go task by task to see if its faster ::not optimal but is a good alternative method
-;;TODO change list to array to see if its faster
+;;; State representation : ( ( ( (JB1.task1) (JB1.task2) ) ( (JB2.task1) ) ) (MST1 MST2 MST3))
+;;; MSTx -> int to represent the maximum start time for a given machine
 
-;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; FUNCOES AUXILIARES;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;
+;; TODO Correct algorithms output (only last state) from procura.lisp
+;; TODO Alternative Search: try to make the search go task by task to see if its faster ::not optimal but is a good alternative method
+;; TODO add order-sucessors to ILDS when generating sucessors
+;; TODO Heuristics
+;; TODO change list to array to see if its faster
+
+;;;;;;;;;;;;;;;;;;;;;;:;;;
+;;; FUNCOES AUXILIARES ;;;
+;;;;;;;;;;;;;;;;;;;;;;:;;;
 
 (defvar *nrJobs* nil)
 (defvar *prob* '())
@@ -171,8 +174,8 @@
 ;;;; HEURISTICAS ;;;
 ;;;;;;;;;;;;;;;;;;;;
 
-;;; TODO
-
+;;;TODO
+  
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; SONDAGEM ITERATIVA ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -241,6 +244,7 @@
 ;;; MISSING -> FUNCAO ORDENA NÓS
 
 (defun depth (state sucessores)
+  "Devolve a profundidade maxima de um estado, i.e quanto sucessores tem."
   (let ((depth 0)
         (lst-sucessors '()))
     (loop (setf lst-sucessors (funcall sucessores state))
@@ -252,11 +256,13 @@
 
 ;;; not used yet, heuristic not defined
 (defun order-sucessors (sucessors heuristica)
+  "Ordena uma lista usando a heuristica."
   (setf sucessors (sort sucessors heuristica)))
 
 ;;;iterativo
 ;;;devolve ((estado1)(estado2)...(estado_objetivo))
 (defun ILDS (state depth discrepancy sucessores objectivo?)
+  "Algoritmo ILDS. Percorre a arvore de estados tendo em conta o numero de descrepancias."
   (let ((start-time (get-start-time)))
     (labels ((ILDS-probe (state path depth discrepancy start-time)
                (let ((lst-sucessors '())
@@ -284,9 +290,9 @@
 
 
 
-;;;;;;;;;;;;;;;;;;;;;;;;
-;;; JOB SHOP PROBLEM ;;;
-;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; JOB SHOP SCHEDULER ;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
 ;;;devolver apenas ultimo estado
