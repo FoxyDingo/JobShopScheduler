@@ -6,8 +6,9 @@
 ;;TODO try to make the search go task by task to see if its faster ::not optimal but is a good alternative method
 ;;TODO change list to array to see if its faster
 
-
-;;; FUNCOES AUXILIARES
+;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; FUNCOES AUXILIARES;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defvar *nrJobs* nil)
 (defvar *prob* '())
@@ -166,8 +167,15 @@
    ;; (print 'generatedEverything)
     (return-from gera-estados  lista-estados)))
 
+;;;;;;;;;;;;;;;;;;;;
+;;;; HEURISTICAS ;;;
+;;;;;;;;;;;;;;;;;;;;
 
-;;;; SONDAGEM ITERATIVA
+;;; TODO
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;; SONDAGEM ITERATIVA ;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun random-sucessor (lst-sucessors)
   "Recebe uma lista de sucessores e devolve um aleatoriamente."
@@ -224,8 +232,11 @@
             (if (funcall objectivo? (first (last solution-state)))
                 (if (or (null best-solution) (< (length solution-state) (length best-solution)))
                     (setf best-solution solution-state))))))))
-           
-;;;; ILDS
+
+
+;;;;;;;;;;;;;           
+;;;; ILDS ;;;
+;;;;;;;;;;;;;
 
 ;;; MISSING -> FUNCAO ORDENA NÓS
 
@@ -273,8 +284,10 @@
 
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;
+;;; JOB SHOP PROBLEM ;;;
+;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;; JOB SHOP PROBLEM
 
 ;;;devolver apenas ultimo estado
 ;;; add procuras certas
