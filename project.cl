@@ -239,6 +239,10 @@
                 (setf state (first lst-sucessors)))
             (return-from depth depth)))))
 
+;;; not used yet, heuristic not defined
+(defun order-sucessors (sucessors heuristica)
+  (setf sucessors (sort sucessors heuristica)))
+
 ;;;iterativo
 ;;;devolve ((estado1)(estado2)...(estado_objetivo))
 (defun ILDS (state depth discrepancy sucessores objectivo?)
