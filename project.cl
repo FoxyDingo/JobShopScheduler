@@ -168,7 +168,7 @@
     (nth n-random lst-sucessors)))
 
 ;;;devolve ((estado1)(estado2)...(estado_objetivo))
-(defun random-probe (state)
+(defun random-probe (state sucessores objectivo?)
   "Algoritmo sondagem iterativa. Procura estado que satisfaça, aleatoriamente, e devolve todos os estados até encontrar o objectivo"
   (let ((solution-state '())
         (solution '())
@@ -176,10 +176,10 @@
     (labels ((iter (state)
                (let ((lst-sucessors '()))
                  (setf solution (append solution (list state)))
-                 (if (fnc-objetivo state)
+                 (if (funcall objectivo? state)
                      solution
                    (progn 
-                     (setf lst-sucessors (gera-estados state))
+                     (setf lst-sucessors (funcall sucessores state))
                      (if (null lst-sucessors)
                          nil
                        (iter (random-sucessor lst-sucessors))))))))
@@ -189,14 +189,14 @@
               (return-from random-probe nil))
           (progn
             (setf solution-state (iter state))
-            (if (fnc-objetivo (first (last solution-state)))
+            (if (funcall objectivo? (first (last solution-state)))
                 (return-from random-probe solution-state))))))))
 
 ;;;; ILDS
 
 ;;;iterativo
 ;;;devolve ((estado1)(estado2)...(estado_objetivo))
-(defun ILDS (state depth discrepancy)
+(defun ILDS (state depth discrepancy sucessores objectivo?)
   (let ((start-time (get-start-time)))
     (labels ((ILDS-probe (state path depth discrepancy start-time)
                (let ((lst-sucessors '())
@@ -206,9 +206,9 @@
                  ;;;(print "entering")
                  ;;;(print path)
                  ;;;(print state)
-                 (if (fnc-objetivo state)
+                 (if (funcall objectivo? state)
                      (return-from ILDS path))
-                 (setf lst-sucessors (gera-estados state))
+                 (setf lst-sucessors (funcall sucessores state))
                  (if (null lst-sucessors) (return-from ILDS-probe NIL))
                  (if (> depth discrepancy)
                      (progn
@@ -226,10 +226,10 @@
          (ILDS-probe state (list state) depth k start-time)))))
 
 
-(defun depth (state)
+(defun depth (state sucessores)
   (let ((depth 0)
         (lst-sucessors '()))
-    (loop (setf lst-sucessors (gera-estados state))
+    (loop (setf lst-sucessors (funcall sucessores state))
           (if (not(null lst-sucessors))
               (progn 
                 (setf depth (incf depth))
@@ -252,9 +252,9 @@
     (if (equal procura "profundidade")
         (setf resultado (procura (cria-problema estado (list 'gera-estados) :objectivo? #'fnc-objetivo :estado= #'equalp :hash #'hash) procura)))
     (if (equal procura "sondagem.iterativa")
-        (setf resultado (last (random-probe estado))))
+        (setf resultado (last (random-probe estado #'gera-estados #'fnc-objetivo))))
     (if (equal procura "ILDS")
-        (setf resultado (last (ILDS estado (depth estado) (depth estado)))))
+        (setf resultado (last (ILDS estado (depth estado #'gera-estados) (depth estado #'gera-estados) #'gera-estados #'fnc-objetivo))))
     resultado))
 
 
