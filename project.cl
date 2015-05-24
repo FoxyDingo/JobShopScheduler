@@ -167,6 +167,7 @@
   (let ((n-random (random (length lst-sucessors))))
     (nth n-random lst-sucessors)))
 
+;;;devolve ((estado1)(estado2)...(estado_objetivo))
 (defun random-probe (state)
   "Algoritmo sondagem iterativa. Procura estado que satisfaça, aleatoriamente, e devolve todos os estados até encontrar o objectivo"
   (let ((solution-state '())
@@ -174,14 +175,13 @@
         (start-time (get-start-time)))
     (labels ((iter (state)
                (let ((lst-sucessors '()))
-               (print state)
                  (setf solution (append solution (list state)))
                  (if (fnc-objetivo state)
                      solution
                    (progn 
                      (setf lst-sucessors (gera-estados state))
                      (if (null lst-sucessors)
-                         solution
+                         nil
                        (iter (random-sucessor lst-sucessors))))))))
       (loop 
         (if (time-to-stop? start-time MAX-SECONDS)
@@ -224,10 +224,8 @@
                              (setf temp-path (list-copy path))))))))       
     (loop for k from 0 to discrepancy do
          (ILDS-probe state (list state) depth k start-time)))))
-         
 
-      
-;;; should work with js sucessor function
+
 (defun depth (state)
   (let ((depth 0)
         (lst-sucessors '()))
@@ -254,9 +252,9 @@
     (if (equal procura "profundidade")
         (setf resultado (procura (cria-problema estado (list 'gera-estados) :objectivo? #'fnc-objetivo :estado= #'equalp :hash #'hash) procura)))
     (if (equal procura "sondagem.iterativa")
-        (setf resultado (random-probe estado)))
+        (setf resultado (last (random-probe estado))))
     (if (equal procura "ILDS")
-        (setf resultado (ILDS estado (depth estado) (depth estado))))
+        (setf resultado (last (ILDS estado (depth estado) (depth estado)))))
     resultado))
 
 
