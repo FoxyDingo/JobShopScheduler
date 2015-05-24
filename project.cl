@@ -13,7 +13,7 @@
 (defvar *prob* '())
 
 ;;; Tempo limite de execução
-(defconstant MAX-SECONDS 15)
+(defconstant MAX-SECONDS 5)
 	
 (defun time-to-stop? (start-time n-seconds)
   "Verifica se ja ultrupassou o tempo de execução pre-definido."
@@ -22,6 +22,13 @@
 (defun get-start-time ()
   "Devolve tempo atual."
   (get-internal-run-time))
+
+
+(defun list-copy (lista)
+  (let ((new-lst '()))
+    (loop for i from 0 to (- (length lista)1) do
+          (setf new-lst (append new-lst (list(nth i lista)))))
+    new-lst))
 
 ;;tested
 (defun problema-to-estado (problema)
@@ -167,6 +174,7 @@
   (let ((n-random (random (length lst-sucessors))))
     (nth n-random lst-sucessors)))
 
+
 ;;;devolve ((estado1)(estado2)...(estado_objetivo))
 (defun random-probe (state sucessores objectivo?)
   "Algoritmo sondagem iterativa. Procura estado que satisfaça, aleatoriamente, e devolve todos os estados até encontrar o objectivo"
@@ -192,7 +200,44 @@
             (if (funcall objectivo? (first (last solution-state)))
                 (return-from random-probe solution-state))))))))
 
+(defun random-probe-optimized (state sucessores objectivo?)
+  "Algoritmo sondagem iterativa optimizada. Guarda o melhor estado,i.e menor comprimento, devolve estado passado MAX-SECONDS"
+  (let ((solution-state '())
+        (solution '())
+        (best-solution '())
+        (start-time (get-start-time)))
+    (labels ((iter (state)
+               (let ((lst-sucessors '()))
+                 (setf solution (append solution (list state)))
+                 (if (funcall objectivo? state)
+                     solution
+                   (progn 
+                     (setf lst-sucessors (funcall sucessores state))
+                     (if (null lst-sucessors)
+                         nil
+                       (iter (random-sucessor lst-sucessors))))))))
+      (loop 
+        (if (time-to-stop? start-time MAX-SECONDS)
+              (return-from random-probe-optimized best-solution))
+          (progn
+            (setf solution-state (iter state))
+            (if (funcall objectivo? (first (last solution-state)))
+                (if (or (null best-solution) (< (length solution-state) (length best-solution)))
+                    (setf best-solution solution-state))))))))
+           
 ;;;; ILDS
+
+;;; MISSING -> FUNCAO ORDENA NÓS
+
+(defun depth (state sucessores)
+  (let ((depth 0)
+        (lst-sucessors '()))
+    (loop (setf lst-sucessors (funcall sucessores state))
+          (if (not(null lst-sucessors))
+              (progn 
+                (setf depth (incf depth))
+                (setf state (first lst-sucessors)))
+            (return-from depth depth)))))
 
 ;;;iterativo
 ;;;devolve ((estado1)(estado2)...(estado_objetivo))
@@ -203,9 +248,6 @@
                      (temp-path (list-copy path)))
                  (if (time-to-stop? start-time MAX-SECONDS)
                      (return-from ILDS nil))
-                 ;;;(print "entering")
-                 ;;;(print path)
-                 ;;;(print state)
                  (if (funcall objectivo? state)
                      (return-from ILDS path))
                  (setf lst-sucessors (funcall sucessores state))
@@ -226,21 +268,7 @@
          (ILDS-probe state (list state) depth k start-time)))))
 
 
-(defun depth (state sucessores)
-  (let ((depth 0)
-        (lst-sucessors '()))
-    (loop (setf lst-sucessors (funcall sucessores state))
-          (if (not(null lst-sucessors))
-              (progn 
-                (setf depth (incf depth))
-                (setf state (first lst-sucessors)))
-            (return-from depth depth)))))
 
-(defun list-copy (lista)
-  (let ((new-lst '()))
-    (loop for i from 0 to (- (length lista)1) do
-          (setf new-lst (append new-lst (list(nth i lista)))))
-    new-lst))
 
 ;;; JOB SHOP PROBLEM
 
@@ -253,6 +281,8 @@
         (setf resultado (procura (cria-problema estado (list 'gera-estados) :objectivo? #'fnc-objetivo :estado= #'equalp :hash #'hash) procura)))
     (if (equal procura "sondagem.iterativa")
         (setf resultado (last (random-probe estado #'gera-estados #'fnc-objetivo))))
+    (if (equal procura "sondagem.iterativa.optimizada")
+        (setf resultado (last (random-probe-optimized estado #'gera-estados #'fnc-objetivo))))
     (if (equal procura "ILDS")
         (setf resultado (last (ILDS estado (depth estado #'gera-estados) (depth estado #'gera-estados) #'gera-estados #'fnc-objetivo))))
     resultado))
