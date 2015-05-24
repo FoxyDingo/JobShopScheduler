@@ -6,48 +6,11 @@
 ;;TODO try to make the search go task by task to see if its faster ::not optimal but is a good alternative method
 ;;TODO change list to array to see if its faster
 
+
+;;; FUNCOES AUXILIARES
+
 (defvar *nrJobs* nil)
 (defvar *prob* '())
-
-;;; para teste
-(setf problema1 (make-job-shop-problem
-    :name "mt06"
-    :n.jobs 3
-    :n.machines 6
-    :jobs (list (MAKE-JOB-SHOP-JOB :JOB.NR 0
-				   :TASKS (list (MAKE-JOB-SHOP-TASK :JOB.NR 0 :TASK.NR 0 :MACHINE.NR 2 :DURATION 1 :START.TIME NIL)
-						(MAKE-JOB-SHOP-TASK :JOB.NR 0 :TASK.NR 1 :MACHINE.NR 0 :DURATION 3 :START.TIME NIL)
-						(MAKE-JOB-SHOP-TASK :JOB.NR 0 :TASK.NR 2 :MACHINE.NR 1 :DURATION 6 :START.TIME NIL)
-						(MAKE-JOB-SHOP-TASK :JOB.NR 0 :TASK.NR 3 :MACHINE.NR 3 :DURATION 7 :START.TIME NIL)
-						(MAKE-JOB-SHOP-TASK :JOB.NR 0 :TASK.NR 4 :MACHINE.NR 5 :DURATION 3 :START.TIME NIL)
-						(MAKE-JOB-SHOP-TASK :JOB.NR 0 :TASK.NR 5 :MACHINE.NR 4 :DURATION 6 :START.TIME NIL)))
-		(MAKE-JOB-SHOP-JOB :JOB.NR 1
-				   :TASKS (list (MAKE-JOB-SHOP-TASK :JOB.NR 1 :TASK.NR 0 :MACHINE.NR 1 :DURATION 8 :START.TIME NIL)
-						(MAKE-JOB-SHOP-TASK :JOB.NR 1 :TASK.NR 1 :MACHINE.NR 2 :DURATION 5 :START.TIME NIL)
-						(MAKE-JOB-SHOP-TASK :JOB.NR 1 :TASK.NR 2 :MACHINE.NR 4 :DURATION 10 :START.TIME NIL)
-						(MAKE-JOB-SHOP-TASK :JOB.NR 1 :TASK.NR 3 :MACHINE.NR 5 :DURATION 10 :START.TIME NIL)
-						(MAKE-JOB-SHOP-TASK :JOB.NR 1 :TASK.NR 4 :MACHINE.NR 0 :DURATION 10 :START.TIME NIL)
-						(MAKE-JOB-SHOP-TASK :JOB.NR 1 :TASK.NR 5 :MACHINE.NR 3 :DURATION 4 :START.TIME NIL)))
-		(MAKE-JOB-SHOP-JOB :JOB.NR 2
-				   :TASKS (list (MAKE-JOB-SHOP-TASK :JOB.NR 2 :TASK.NR 0 :MACHINE.NR 1 :DURATION 3 :START.TIME NIL)
-						(MAKE-JOB-SHOP-TASK :JOB.NR 2 :TASK.NR 1 :MACHINE.NR 3 :DURATION 3 :START.TIME NIL)
-						(MAKE-JOB-SHOP-TASK :JOB.NR 2 :TASK.NR 2 :MACHINE.NR 5 :DURATION 9 :START.TIME NIL)
-						(MAKE-JOB-SHOP-TASK :JOB.NR 2 :TASK.NR 3 :MACHINE.NR 0 :DURATION 10 :START.TIME NIL)
-						(MAKE-JOB-SHOP-TASK :JOB.NR 2 :TASK.NR 4 :MACHINE.NR 4 :DURATION 4 :START.TIME NIL)
-						(MAKE-JOB-SHOP-TASK :JOB.NR 2 :TASK.NR 5 :MACHINE.NR 2 :DURATION 1 :START.TIME NIL))))))
-
-
-;;;devolver apenas ultimo estado
-;;; add procuras certas
-(defun calendarizacao (estado-inicial procura)
-  (let ((estado (problema-to-estado estado-inicial))
-        (resultado '()))
-    (if (equal procura "profundidade")
-        (setf resultado (last(procura (cria-problema estado (list 'gera-estados) :objectivo? #'fnc-objetivo :estado= #'equalp :hash #'hash) procura))))))
-        
-
-(defun hash (estado)
-   estado)
 
 ;;tested
 (defun problema-to-estado (problema)
@@ -68,7 +31,6 @@
     (setf lista (list lista-jobs listamaquinas))
     (setf *prob* lista)
     (return-from problema-to-estado lista)))
-
 
 
 ;;;Tested
@@ -120,8 +82,12 @@
       (if (not (tarefa-hasStartTime? estado nrJob nrTask))
           (return-from fnc-objetivo nil))))
   (return-from fnc-objetivo t))
-      
 
+
+(defun hash (estado)
+   estado)
+
+      
 ;;tNOT WORKING
 ;;TODO do this without using reverse!!
 (defun copia-estado (estado)
@@ -183,13 +149,50 @@
     (return-from gera-estados  lista-estados)))
 
 
+;;;; SONDAGEM ITERATIVA
+
+;;;; ILDS
+
+;;; JOB SHOP PROBLEM
+
+;;;devolver apenas ultimo estado
+;;; add procuras certas
+(defun calendarizacao (estado-inicial procura)
+  (let ((estado (problema-to-estado estado-inicial))
+        (resultado '()))
+    (if (equal procura "profundidade")
+        (setf resultado (last(procura (cria-problema estado (list 'gera-estados) :objectivo? #'fnc-objetivo :estado= #'equalp :hash #'hash) procura))))))
+        
 
 
+;;; TO REMOVE (DEBUG ONLY)
 
-
-
-
-
+;;; para teste
+(setf problema1 (make-job-shop-problem
+    :name "mt06"
+    :n.jobs 3
+    :n.machines 6
+    :jobs (list (MAKE-JOB-SHOP-JOB :JOB.NR 0
+				   :TASKS (list (MAKE-JOB-SHOP-TASK :JOB.NR 0 :TASK.NR 0 :MACHINE.NR 2 :DURATION 1 :START.TIME NIL)
+						(MAKE-JOB-SHOP-TASK :JOB.NR 0 :TASK.NR 1 :MACHINE.NR 0 :DURATION 3 :START.TIME NIL)
+						(MAKE-JOB-SHOP-TASK :JOB.NR 0 :TASK.NR 2 :MACHINE.NR 1 :DURATION 6 :START.TIME NIL)
+						(MAKE-JOB-SHOP-TASK :JOB.NR 0 :TASK.NR 3 :MACHINE.NR 3 :DURATION 7 :START.TIME NIL)
+						(MAKE-JOB-SHOP-TASK :JOB.NR 0 :TASK.NR 4 :MACHINE.NR 5 :DURATION 3 :START.TIME NIL)
+						(MAKE-JOB-SHOP-TASK :JOB.NR 0 :TASK.NR 5 :MACHINE.NR 4 :DURATION 6 :START.TIME NIL)))
+		(MAKE-JOB-SHOP-JOB :JOB.NR 1
+				   :TASKS (list (MAKE-JOB-SHOP-TASK :JOB.NR 1 :TASK.NR 0 :MACHINE.NR 1 :DURATION 8 :START.TIME NIL)
+						(MAKE-JOB-SHOP-TASK :JOB.NR 1 :TASK.NR 1 :MACHINE.NR 2 :DURATION 5 :START.TIME NIL)
+						(MAKE-JOB-SHOP-TASK :JOB.NR 1 :TASK.NR 2 :MACHINE.NR 4 :DURATION 10 :START.TIME NIL)
+						(MAKE-JOB-SHOP-TASK :JOB.NR 1 :TASK.NR 3 :MACHINE.NR 5 :DURATION 10 :START.TIME NIL)
+						(MAKE-JOB-SHOP-TASK :JOB.NR 1 :TASK.NR 4 :MACHINE.NR 0 :DURATION 10 :START.TIME NIL)
+						(MAKE-JOB-SHOP-TASK :JOB.NR 1 :TASK.NR 5 :MACHINE.NR 3 :DURATION 4 :START.TIME NIL)))
+		(MAKE-JOB-SHOP-JOB :JOB.NR 2
+				   :TASKS (list (MAKE-JOB-SHOP-TASK :JOB.NR 2 :TASK.NR 0 :MACHINE.NR 1 :DURATION 3 :START.TIME NIL)
+						(MAKE-JOB-SHOP-TASK :JOB.NR 2 :TASK.NR 1 :MACHINE.NR 3 :DURATION 3 :START.TIME NIL)
+						(MAKE-JOB-SHOP-TASK :JOB.NR 2 :TASK.NR 2 :MACHINE.NR 5 :DURATION 9 :START.TIME NIL)
+						(MAKE-JOB-SHOP-TASK :JOB.NR 2 :TASK.NR 3 :MACHINE.NR 0 :DURATION 10 :START.TIME NIL)
+						(MAKE-JOB-SHOP-TASK :JOB.NR 2 :TASK.NR 4 :MACHINE.NR 4 :DURATION 4 :START.TIME NIL)
+						(MAKE-JOB-SHOP-TASK :JOB.NR 2 :TASK.NR 5 :MACHINE.NR 2 :DURATION 1 :START.TIME NIL))))))
 
 
         
