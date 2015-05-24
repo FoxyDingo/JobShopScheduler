@@ -12,6 +12,17 @@
 (defvar *nrJobs* nil)
 (defvar *prob* '())
 
+;;; Tempo limite de execução
+(defconstant MAX-SECONDS 15)
+	
+(defun time-to-stop? (start-time n-seconds)
+  "Verifica se ja ultrupassou o tempo de execução pre-definido."
+  (<= (* n-seconds INTERNAL-TIME-UNITS-PER-SECOND) (- (get-start-time) start-time )))
+
+(defun get-start-time ()
+  "Devolve tempo atual."
+  (get-internal-run-time))
+
 ;;tested
 (defun problema-to-estado (problema)
   (let ((lista-jobs '())
@@ -61,7 +72,7 @@
 
 
 ;;(defun estado-tarefa-machineNr (estado nrJob nrTask)
- ;; (job-shop-task-machine.nr (estado-tarefa estado nrJob nrTask)))
+;; (job-shop-task-machine.nr (estado-tarefa estado nrJob nrTask)))
 
 ;;;Tested
 (defun job-nrTasks (estado nrJob)
@@ -151,6 +162,37 @@
 
 ;;;; SONDAGEM ITERATIVA
 
+(defun random-sucessor (lst-sucessors)
+  "Recebe uma lista de sucessores e devolve um aleatoriamente."
+  (let ((n-random (random (length lst-sucessors))))
+    (nth n-random lst-sucessors)))
+
+(defun random-probe (state)
+  "Algoritmo sondagem iterativa. Procura estado que satisfaça, aleatoriamente, e devolve todos os estados até encontrar o objectivo"
+  (let ((solution-state '())
+        (solution '())
+        (start-time (get-start-time)))
+    (labels ((iter (state)
+               (let ((lst-sucessors '()))
+               (print state)
+                 (setf solution (append solution (list state)))
+                 (print "after sol")
+                 (if (fnc-objetivo state)
+                   solution
+                   (progn (print "else")
+                     (setf lst-sucessors (gera-estados state))
+                     (if (null lst-sucessors)
+                         solution
+                       (iter (random-sucessor lst-sucessors))))))))
+      (loop 
+        (if (time-to-stop? start-time MAX-SECONDS)
+            (progn
+              (return-from random-probe nil))
+          (progn
+            (setf solution-state (iter state))
+            (if (fnc-objetivo (first (last solution-state)))
+                (return-from random-probe solution-state))))))))
+
 ;;;; ILDS
 
 ;;; JOB SHOP PROBLEM
@@ -161,8 +203,10 @@
   (let ((estado (problema-to-estado estado-inicial))
         (resultado '()))
     (if (equal procura "profundidade")
-        (setf resultado (last(procura (cria-problema estado (list 'gera-estados) :objectivo? #'fnc-objetivo :estado= #'equalp :hash #'hash) procura))))))
-        
+        (setf resultado (procura (cria-problema estado (list 'gera-estados) :objectivo? #'fnc-objetivo :estado= #'equalp :hash #'hash) procura)))
+    (if (equal procura "sondagem.iterativa")
+        (setf resultado (random-probe estado-inicial)))
+    resultado))
 
 
 ;;; TO REMOVE (DEBUG ONLY)
@@ -193,13 +237,6 @@
 						(MAKE-JOB-SHOP-TASK :JOB.NR 2 :TASK.NR 3 :MACHINE.NR 0 :DURATION 10 :START.TIME NIL)
 						(MAKE-JOB-SHOP-TASK :JOB.NR 2 :TASK.NR 4 :MACHINE.NR 4 :DURATION 4 :START.TIME NIL)
 						(MAKE-JOB-SHOP-TASK :JOB.NR 2 :TASK.NR 5 :MACHINE.NR 2 :DURATION 1 :START.TIME NIL))))))
+        
 
-
-        
-        
-        
-        
-        
-        
-  
 
