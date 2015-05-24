@@ -176,10 +176,9 @@
                (let ((lst-sucessors '()))
                (print state)
                  (setf solution (append solution (list state)))
-                 (print "after sol")
                  (if (fnc-objetivo state)
-                   solution
-                   (progn (print "else")
+                     solution
+                   (progn 
                      (setf lst-sucessors (gera-estados state))
                      (if (null lst-sucessors)
                          solution
@@ -195,6 +194,56 @@
 
 ;;;; ILDS
 
+;;;iterativo
+;;;devolve ((estado1)(estado2)...(estado_objetivo))
+(defun ILDS (state depth discrepancy)
+  (let ((start-time (get-start-time)))
+    (labels ((ILDS-probe (state path depth discrepancy start-time)
+               (let ((lst-sucessors '())
+                     (temp-path (list-copy path)))
+                 (if (time-to-stop? start-time MAX-SECONDS)
+                     (return-from ILDS nil))
+                 ;;;(print "entering")
+                 ;;;(print path)
+                 ;;;(print state)
+                 (if (fnc-objetivo state)
+                     (return-from ILDS path))
+                 (setf lst-sucessors (gera-estados state))
+                 (if (null lst-sucessors) (return-from ILDS-probe NIL))
+                 (if (> depth discrepancy)
+                     (progn
+                       (setf lst-sucessors (first lst-sucessors))
+                       (setf temp-path (append temp-path (list lst-sucessors)))
+                       (ILDS-probe lst-sucessors temp-path (- depth 1) discrepancy start-time))) 
+                 (if (> discrepancy 0)
+                     (progn
+                       (setf lst-sucessors (rest lst-sucessors))
+                       (loop for i from 0 to (- (length lst-sucessors) 1) do
+                             (setf temp-path (append temp-path (list (nth i lst-sucessors))))
+                             (ILDS-probe (nth i lst-sucessors) temp-path (- depth 1) (- discrepancy 1) start-time)
+                             (setf temp-path (list-copy path))))))))       
+    (loop for k from 0 to discrepancy do
+         (ILDS-probe state (list state) depth k start-time)))))
+         
+
+      
+;;; should work with js sucessor function
+(defun depth (state)
+  (let ((depth 0)
+        (lst-sucessors '()))
+    (loop (setf lst-sucessors (gera-estados state))
+          (if (not(null lst-sucessors))
+              (progn 
+                (setf depth (incf depth))
+                (setf state (first lst-sucessors)))
+            (return-from depth depth)))))
+
+(defun list-copy (lista)
+  (let ((new-lst '()))
+    (loop for i from 0 to (- (length lista)1) do
+          (setf new-lst (append new-lst (list(nth i lista)))))
+    new-lst))
+
 ;;; JOB SHOP PROBLEM
 
 ;;;devolver apenas ultimo estado
@@ -205,38 +254,12 @@
     (if (equal procura "profundidade")
         (setf resultado (procura (cria-problema estado (list 'gera-estados) :objectivo? #'fnc-objetivo :estado= #'equalp :hash #'hash) procura)))
     (if (equal procura "sondagem.iterativa")
-        (setf resultado (random-probe estado-inicial)))
+        (setf resultado (random-probe estado)))
+    (if (equal procura "ILDS")
+        (setf resultado (ILDS estado (depth estado) (depth estado))))
     resultado))
 
 
-;;; TO REMOVE (DEBUG ONLY)
 
-;;; para teste
-(setf problema1 (make-job-shop-problem
-    :name "mt06"
-    :n.jobs 3
-    :n.machines 6
-    :jobs (list (MAKE-JOB-SHOP-JOB :JOB.NR 0
-				   :TASKS (list (MAKE-JOB-SHOP-TASK :JOB.NR 0 :TASK.NR 0 :MACHINE.NR 2 :DURATION 1 :START.TIME NIL)
-						(MAKE-JOB-SHOP-TASK :JOB.NR 0 :TASK.NR 1 :MACHINE.NR 0 :DURATION 3 :START.TIME NIL)
-						(MAKE-JOB-SHOP-TASK :JOB.NR 0 :TASK.NR 2 :MACHINE.NR 1 :DURATION 6 :START.TIME NIL)
-						(MAKE-JOB-SHOP-TASK :JOB.NR 0 :TASK.NR 3 :MACHINE.NR 3 :DURATION 7 :START.TIME NIL)
-						(MAKE-JOB-SHOP-TASK :JOB.NR 0 :TASK.NR 4 :MACHINE.NR 5 :DURATION 3 :START.TIME NIL)
-						(MAKE-JOB-SHOP-TASK :JOB.NR 0 :TASK.NR 5 :MACHINE.NR 4 :DURATION 6 :START.TIME NIL)))
-		(MAKE-JOB-SHOP-JOB :JOB.NR 1
-				   :TASKS (list (MAKE-JOB-SHOP-TASK :JOB.NR 1 :TASK.NR 0 :MACHINE.NR 1 :DURATION 8 :START.TIME NIL)
-						(MAKE-JOB-SHOP-TASK :JOB.NR 1 :TASK.NR 1 :MACHINE.NR 2 :DURATION 5 :START.TIME NIL)
-						(MAKE-JOB-SHOP-TASK :JOB.NR 1 :TASK.NR 2 :MACHINE.NR 4 :DURATION 10 :START.TIME NIL)
-						(MAKE-JOB-SHOP-TASK :JOB.NR 1 :TASK.NR 3 :MACHINE.NR 5 :DURATION 10 :START.TIME NIL)
-						(MAKE-JOB-SHOP-TASK :JOB.NR 1 :TASK.NR 4 :MACHINE.NR 0 :DURATION 10 :START.TIME NIL)
-						(MAKE-JOB-SHOP-TASK :JOB.NR 1 :TASK.NR 5 :MACHINE.NR 3 :DURATION 4 :START.TIME NIL)))
-		(MAKE-JOB-SHOP-JOB :JOB.NR 2
-				   :TASKS (list (MAKE-JOB-SHOP-TASK :JOB.NR 2 :TASK.NR 0 :MACHINE.NR 1 :DURATION 3 :START.TIME NIL)
-						(MAKE-JOB-SHOP-TASK :JOB.NR 2 :TASK.NR 1 :MACHINE.NR 3 :DURATION 3 :START.TIME NIL)
-						(MAKE-JOB-SHOP-TASK :JOB.NR 2 :TASK.NR 2 :MACHINE.NR 5 :DURATION 9 :START.TIME NIL)
-						(MAKE-JOB-SHOP-TASK :JOB.NR 2 :TASK.NR 3 :MACHINE.NR 0 :DURATION 10 :START.TIME NIL)
-						(MAKE-JOB-SHOP-TASK :JOB.NR 2 :TASK.NR 4 :MACHINE.NR 4 :DURATION 4 :START.TIME NIL)
-						(MAKE-JOB-SHOP-TASK :JOB.NR 2 :TASK.NR 5 :MACHINE.NR 2 :DURATION 1 :START.TIME NIL))))))
-        
 
 
