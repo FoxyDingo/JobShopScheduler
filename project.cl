@@ -50,7 +50,7 @@
     (setf listamaquinas (make-list (job-shop-problem-n.machines problema)))
     (dotimes (n (length listamaquinas))
       (setf (nth n listamaquinas) 0))
-    (setf lista (list lista-jobs listamaquinas))
+    (setf lista (list lista-jobs listamaquinas 0))
     (setf *prob* lista)
     (return-from problema-to-estado lista)))
 
@@ -81,6 +81,15 @@
 (defun set-startTimeOfTask (estado nrJob nrTask startTime)
   (setf (job-shop-task-start.time (estado-tarefa estado nrJob nrTask)) startTime))
 
+(defun estado-nrTarefas (estado)
+  (nth 2 estado))
+
+(defun estado-incNrTarefas (estado)
+  (let ((nr (nth 2 estado)))
+    (setf (nth 2 estado) (+ nr 1 ))))
+
+(defun estado-setNrTarefas (estado nr)
+  (setf (nth 2 estado) nr ))
 
 ;;(defun estado-tarefa-machineNr (estado nrJob nrTask)
 ;; (job-shop-task-machine.nr (estado-tarefa estado nrJob nrTask)))
@@ -110,10 +119,9 @@
    estado)
 
       
-;;tNOT WORKING
 ;;TODO do this without using reverse!!
 (defun copia-estado (estado)
-  (let* ((resultado (make-list 2))
+  (let* ((resultado (make-list 3))
     (lista-jobs '())
     (lista-tarefas '())
     (rev '()))
@@ -127,9 +135,10 @@
     (setf lista-tarefas '()))
   (setf lista-jobs (reverse lista-jobs))
   (estado-setListaJobs resultado lista-jobs)
+  (estado-setNrTarefas resultado (estado-nrTarefas estado))
   (return-from copia-estado resultado)))
   
-;;;TODO falta verificar se o tempo da maquina Ã© maior que o tempo da tarefa anterior
+
 (defun gera-estados (estado)
   (let ((lista-estados '())
     (tmp-estado '())
@@ -163,6 +172,7 @@
                 (setf finishTime (+ startTime (job-shop-task-duration (estado-tarefa tmp-estado nrJob nrTask))))
                 (estado-setStartTimeMachine tmp-estado (job-shop-task-machine.nr (estado-tarefa tmp-estado nrJob nrTask)) finishTime )
                 (set-startTimeOfTask tmp-estado nrJob nrTask startTime)
+                (estado-incNrTarefas tmp-estado)
                 (push tmp-estado lista-estados)
                 (setf startTime 0)
                 (setf finishTime 0)
@@ -173,6 +183,23 @@
 ;;;;;;;;;;;;;;;;;;;;
 ;;;; HEURISTICAS ;;;
 ;;;;;;;;;;;;;;;;;;;;
+
+
+(defun h1-maiorTempo (estado)
+  (let ((maiorTempo 0)
+    (machineTime 0))
+  (dotimes (machineNr (length (estado-listaMaquinas estado)))
+    (setf machineTime (estado-getStartTimeMachine estado machineNr))
+    (if (> machineTime maiorTempo)
+      (setf maiorTempo machineTime)))
+  (return-from h1-maiorTempo maiorTempo)))
+
+(defun h2-tempoEtarefas (estado)
+  (let ((tempo (h1-maiorTempo estado))
+        (maiorTempo 0))
+    (setf maiorTempo (- tempo  (* (estado-nrTarefas estado) 3)))
+  (return-from h2-tempoEtarefas maiorTempo)))
+  
 
 ;;;TODO
   
@@ -294,7 +321,7 @@
 ;;; JOB SHOP SCHEDULER ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
+;;;TODO Change the last functions - testing only
 ;;;devolver apenas ultimo estado
 ;;; add procuras certas
 (defun calendarizacao (estado-inicial procura)
@@ -308,9 +335,19 @@
         (setf resultado (last (random-probe-optimized estado #'gera-estados #'fnc-objetivo))))
     (if (equal procura "ILDS")
         (setf resultado (last (ILDS estado (depth estado #'gera-estados) (depth estado #'gera-estados) #'gera-estados #'fnc-objetivo))))
+    (if (equal procura "a*")
+        (setf resultado (procura (cria-problema estado (list 'gera-estados) :objectivo? #'fnc-objetivo :estado= #'equalp :hash #'hash :heuristica #'h1-maiorTempo) procura)))
+    (if (equal procura "ida*")
+        (setf resultado (procura (cria-problema estado (list 'gera-estados) :objectivo? #'fnc-objetivo :estado= #'equalp :hash #'hash :heuristica #'h1-maiorTempo) procura)))
+     (if (equal procura "a*h2")
+        (setf resultado (procura (cria-problema estado (list 'gera-estados) :objectivo? #'fnc-objetivo :estado= #'equalp :hash #'hash :heuristica #'h2-tempoEtarefas) "a*")))
+    (if (equal procura "ida*h2")
+        (setf resultado (procura (cria-problema estado (list 'gera-estados) :objectivo? #'fnc-objetivo :estado= #'equalp :hash #'hash :heuristica #'h2-tempoEtarefas) "ida*")))
     resultado))
 
 
 
 
 
+;;NOTAS h2 parece explorar menos estados que h1
+;;; NOTA escrever no relatorio que tanto em h1 e h2 apenas interessa o tempo da maquina com maior tempo pois o objectivo é ter a calendarizacao com menor tempo de todas as tarefas e não com menor tempo EM CADA tarefa
