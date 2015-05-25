@@ -287,10 +287,10 @@
   (setf sucessors (sort sucessors heuristica)))
 
 (defun order-sucessors-h1 (estado1 estado2)
-  (< (h1-maiorTempo estado1) (h1-maiorTempo estado2)))
+  (< (abs (h1-maiorTempo estado1)) (abs (h1-maiorTempo estado2))))
 
 (defun order-sucessors-h2 (estado1 estado2)
-  (< (h2-tempoEtarefas estado1) (h2-tempoEtarefas estado2)))
+  (< (abs (h2-tempoEtarefas estado1)) (abs (h2-tempoEtarefas estado2))))
 
 
 ;;;iterativo
