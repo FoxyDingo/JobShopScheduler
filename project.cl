@@ -286,9 +286,16 @@
   "Ordena uma lista usando a heuristica."
   (setf sucessors (sort sucessors heuristica)))
 
+(defun order-sucessors-h1 (estado1 estado2)
+  (< (h1-maiorTempo estado1) (h1-maiorTempo estado2)))
+
+(defun order-sucessors-h2 (estado1 estado2)
+  (< (h2-tempoEtarefas estado1) (h2-tempoEtarefas estado2)))
+
+
 ;;;iterativo
 ;;;devolve ((estado1)(estado2)...(estado_objetivo))
-(defun ILDS (state depth discrepancy sucessores objectivo?)
+(defun ILDS (state depth discrepancy sucessores objectivo? heuristic)
   "Algoritmo ILDS. Percorre a arvore de estados tendo em conta o numero de descrepancias."
   (let ((start-time (get-start-time)))
     (labels ((ILDS-probe (state path depth discrepancy start-time)
@@ -298,7 +305,7 @@
                      (return-from ILDS nil))
                  (if (funcall objectivo? state)
                      (return-from ILDS path))
-                 (setf lst-sucessors (funcall sucessores state))
+                 (setf lst-sucessors (order-sucessors (funcall sucessores state) heuristic))
                  (if (null lst-sucessors) (return-from ILDS-probe NIL))
                  (if (> depth discrepancy)
                      (progn
@@ -334,7 +341,7 @@
     (if (equal procura "sondagem.iterativa.optimizada")
         (setf resultado (last (random-probe-optimized estado #'gera-estados #'fnc-objetivo))))
     (if (equal procura "ILDS")
-        (setf resultado (last (ILDS estado (depth estado #'gera-estados) (depth estado #'gera-estados) #'gera-estados #'fnc-objetivo))))
+        (setf resultado (last (ILDS estado (depth estado #'gera-estados) (depth estado #'gera-estados) #'gera-estados #'fnc-objetivo #'order-sucessors-h1))))
     (if (equal procura "a*")
         (setf resultado (procura (cria-problema estado (list 'gera-estados) :objectivo? #'fnc-objetivo :estado= #'equalp :hash #'hash :heuristica #'h1-maiorTempo) procura)))
     (if (equal procura "ida*")
