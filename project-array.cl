@@ -458,22 +458,23 @@
                  (if (null lst-sucessors) (return-from ILDS-probe NIL))
                  (if (> depth discrepancy)
                      (progn
-                       (setf lst-sucessors (first lst-sucessors))
-                       (setf temp-path (append temp-path (list lst-sucessors)))
-                       (ILDS-probe lst-sucessors temp-path (- depth 1) discrepancy start-time))) 
+                      ;;; (setf lst-sucessors (first lst-sucessors))
+                       (setf temp-path (append temp-path (list (first lst-sucessors))))
+                       (ILDS-probe (first lst-sucessors) temp-path (- depth 1) discrepancy start-time))) 
                  (if (> discrepancy 0)
                      (progn
                        (setf lst-sucessors (rest lst-sucessors))
+                      ;;; (print lst-sucessors)
                        (loop for i from 0 to (- (length lst-sucessors) 1) do
                              (setf temp-path (append temp-path (list (nth i lst-sucessors))))
                              (ILDS-probe (nth i lst-sucessors) temp-path (- depth 1) (- discrepancy 1) start-time)
                              (setf temp-path (list-copy path))))))))
-      (if (time-to-stop? start-time MAX-SECONDS)
-          best-solution)
       (loop for k from 0 to discrepancy do
             (setf solution (ILDS-probe state (list state) depth k start-time))
-            (if (or (null best-solution) (< (h1-maiorTempo solution) (h1-maiorTempo best-solution)))
-                (setf best-solution solution))))))
+            (if (or (null best-solution) (< (h1-maiorTempo (first (last solution))) (h1-maiorTempo (first (last best-solution)))))
+                (setf best-solution solution))
+            (if (time-to-stop? start-time MAX-SECONDS)
+                best-solution)))))
 
 
 
@@ -490,13 +491,13 @@
     (if (equal procura "profundidade")
         (setf resultado (procura (cria-problema estado (list 'gera-estados) :objectivo? #'fnc-objetivo :estado= #'estado-igual :hash #'hash) procura :espaco-em-arvore? t) ))
     (if (equal procura "sondagem.iterativa")
-        (setf resultado (random-probe estado #'gera-estados #'fnc-objetivo)))
+        (setf resultado (last(random-probe estado #'gera-estados #'fnc-objetivo))))
     (if (equal procura "sondagem.iterativa.optimizada")
-        (setf resultado (random-probe-optimized estado #'gera-estados #'fnc-objetivo)))
+        (setf resultado (last (random-probe-optimized estado #'gera-estados #'fnc-objetivo))))
     (if (equal procura "ILDS")
-        (setf resultado (ILDS estado (depth estado #'gera-estados) (depth estado #'gera-estados) #'gera-estados #'fnc-objetivo #'order-sucessors-h1)))
+        (setf resultado (last(ILDS estado (depth estado #'gera-estados) (depth estado #'gera-estados) #'gera-estados #'fnc-objetivo #'order-sucessors-h1))))
     (if (equal procura "ILDS-optimizado")
-        (setf resultado (ILDS-optimized estado (depth estado #'gera-estados) (depth estado #'gera-estados) #'gera-estados #'fnc-objetivo #'order-sucessors-h1)))
+        (setf resultado (last(ILDS-optimized estado (depth estado #'gera-estados) (depth estado #'gera-estados) #'gera-estados #'fnc-objetivo #'order-sucessors-h1))))
     (if (equal procura "a*")
         (setf resultado (procura (cria-problema estado (list 'gera-estados) :objectivo? #'fnc-objetivo :estado= #'estado-igual :hash #'hash :heuristica #'h1-maiorTempo) procura :espaco-em-arvore? t) ))
     (if (equal procura "ida*")
