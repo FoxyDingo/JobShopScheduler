@@ -21,10 +21,10 @@
 
 
 ;;; Tempo limite de execução
-(defconstant MAX-SECONDS 5)
+(defconstant MAX-SECONDS 60)
   
 (defun time-to-stop? (start-time n-seconds)
-  "Verifica se ja ultrupassou o tempo de execução pre-definido."
+  "Verifica se ja ultrupassou o tempo de execucao pre-definido."
   (<= (* n-seconds INTERNAL-TIME-UNITS-PER-SECOND) (- (get-start-time) start-time )))
 
 (defun get-start-time ()
@@ -356,7 +356,7 @@
           (progn
             (setf solution-state (iter state))
             (if (funcall objectivo? (first (last solution-state)))
-                (if (or (null best-solution) (< (length solution-state) (length best-solution)))
+                (if (or (null best-solution) (< (h1-maiorTempo solution-state) (h1-maiorTempo best-solution)))
                     (setf best-solution solution-state))))))))
 
 
@@ -364,7 +364,6 @@
 ;;;; ILDS ;;;
 ;;;;;;;;;;;;;
 
-;;; MISSING -> FUNCAO ORDENA NÓS
 
 (defun depth (state sucessores)
   "Devolve a profundidade maxima de um estado, i.e quanto sucessores tem."
@@ -414,7 +413,40 @@
                              (ILDS-probe (nth i lst-sucessors) temp-path (- depth 1) (- discrepancy 1) start-time)
                              (setf temp-path (list-copy path))))))))       
     (loop for k from 0 to discrepancy do
-         (ILDS-probe state (list state) depth k start-time)))))
+          (ILDS-probe state (list state) depth k start-time)))))
+
+(defun ILDS-optimized (state depth discrepancy sucessores objectivo? heuristic)
+  "Algoritmo ILDS. Guarda o melhor resultado e devolve apos x MAX-SECONDS"
+  (let ((start-time (get-start-time))
+        (solution '())
+        (best-solution '()))
+    (labels ((ILDS-probe (state path depth discrepancy start-time)
+               (let ((lst-sucessors '())
+                     (temp-path (list-copy path)))
+                 (if (time-to-stop? start-time MAX-SECONDS)
+                     (return-from ILDS-probe nil))
+                 (if (funcall objectivo? state)
+                     (return-from ILDS-probe path))
+                 (setf lst-sucessors (order-sucessors (funcall sucessores state) heuristic))
+                 (if (null lst-sucessors) (return-from ILDS-probe NIL))
+                 (if (> depth discrepancy)
+                     (progn
+                       (setf lst-sucessors (first lst-sucessors))
+                       (setf temp-path (append temp-path (list lst-sucessors)))
+                       (ILDS-probe lst-sucessors temp-path (- depth 1) discrepancy start-time))) 
+                 (if (> discrepancy 0)
+                     (progn
+                       (setf lst-sucessors (rest lst-sucessors))
+                       (loop for i from 0 to (- (length lst-sucessors) 1) do
+                             (setf temp-path (append temp-path (list (nth i lst-sucessors))))
+                             (ILDS-probe (nth i lst-sucessors) temp-path (- depth 1) (- discrepancy 1) start-time)
+                             (setf temp-path (list-copy path))))))))
+      (if (time-to-stop? start-time MAX-SECONDS)
+          best-solution)
+      (loop for k from 0 to discrepancy do
+            (setf solution (ILDS-probe state (list state) depth k start-time))
+            (if (or (null best-solution) (< (h1-maiorTempo solution) (h1-maiorTempo best-solution)))
+                (setf best-solution solution))))))
 
 
 
@@ -436,6 +468,8 @@
         (setf resultado (random-probe-optimized estado #'gera-estados #'fnc-objetivo)))
     (if (equal procura "ILDS")
         (setf resultado (ILDS estado (depth estado #'gera-estados) (depth estado #'gera-estados) #'gera-estados #'fnc-objetivo #'order-sucessors-h1)))
+    (if (equal procura "ILDS-optimizado")
+        (setf resultado (ILDS-optimized estado (depth estado #'gera-estados) (depth estado #'gera-estados) #'gera-estados #'fnc-objetivo #'order-sucessors-h1)))
     (if (equal procura "a*")
         (setf resultado (procura (cria-problema estado (list 'gera-estados) :objectivo? #'fnc-objetivo :estado= #'estado-igual :hash #'hash :heuristica #'h1-maiorTempo) procura :espaco-em-arvore? t) ))
     (if (equal procura "ida*")
