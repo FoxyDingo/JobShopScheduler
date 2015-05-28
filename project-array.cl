@@ -383,7 +383,7 @@
           (progn
             (setf solution-state (iter state))
             (if (funcall objectivo? (first (last solution-state)))
-                (if (or (null best-solution) (< (h1-maiorTempo solution-state) (h1-maiorTempo best-solution)))
+                (if (or (null best-solution) (< (h1-maiorTempo (first (last solution-state))) (h1-maiorTempo (first (last best-solution)))))
                     (setf best-solution solution-state))))))))
 
 
