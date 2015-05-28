@@ -19,6 +19,8 @@
 (defvar *nrMaxTasks* 0)
 (defvar *max-tasks-per-job* 0)
 
+(defvar *corte* 0)
+
 
 ;;; Tempo limite de execução
 (defconstant MAX-SECONDS 60)
@@ -54,7 +56,7 @@
       ;(print nrJob)
       ;(print *job-list*)
       (setf (gethash nrJob *job-list*) (make-hash-table))
-      
+      (setf *corte* 0)
       (setf tasks-per-job 0)
       (setf job (nth nrJob (job-shop-problem-jobs problema)))
       (setf lista-tarefas (job-shop-job-tasks job))
@@ -225,6 +227,50 @@
     
      lista-estados))
 
+
+
+
+
+(defun gera-estados-corte (estado)
+  (let ((lista-estados '())
+    (tmp-estado '())
+    (startTime 0)
+    (finishTime 0)
+    (tmpCorte)
+    (nrCorteEstado (estado-nrTarefas estado)))
+  (if (< (abs (- nrCorteEstado *corte*)) 2)
+    (dotimes (nrJob *nrJobs*)
+      (block checkJob
+        (dotimes (nrTask (job-nrTasks estado nrJob))
+          (block checkTask
+            (if (tarefa-hasStartTime? estado nrJob nrTask)
+              (progn
+                (return-from checkTask t))
+              (progn
+                (setf tmp-estado (copia-estado estado))
+                (setf startTime (estado-getStartTimeMachine tmp-estado (job-shop-task-machine.nr (estado-tarefa nrJob nrTask))))
+                (if (> nrTask 0)
+                  (progn 
+                    (if (< startTime (get-finishTimeOfTask tmp-estado nrJob (- nrTask 1) ))
+                     (setf startTime (get-finishTimeOfTask tmp-estado nrJob (- nrTask 1) )))))
+                (setf finishTime (+ startTime (job-shop-task-duration (estado-tarefa nrJob nrTask))))
+                (estado-setStartTimeMachine tmp-estado (job-shop-task-machine.nr (estado-tarefa nrJob nrTask)) finishTime )
+                (set-startTimeOfTask tmp-estado nrJob nrTask startTime)
+                (setf tmpCorte (estado-incNrTarefas tmp-estado))
+                ;;(push tmp-estado lista-estados)
+                (setf lista-estados (nconc (list tmp-estado) lista-estados))
+                (setf startTime 0)
+                (setf finishTime 0)
+                (if (> tmpCorte *corte*)
+                  (setf *corte* tmpCorte))
+                (return-from checkJob t))))))))
+    ;;(push lista-estados lista)
+    
+     lista-estados))
+
+
+
+
 ;;;;;;;;;;;;;;;;;;;;
 ;;;; HEURISTICAS ;;;
 ;;;;;;;;;;;;;;;;;;;;
@@ -257,45 +303,26 @@
     (setf nr (/ nr maxTasks))
     (setf maiorTempo (* tempo  nr))))
 
-
+;;worse than h2, better than the rest
 (defun h4-menorTempoUltimaTarefa (estado)
   (let (( menorTempo most-positive-fixnum)
     (tmp most-positive-fixnum))
+  ;(print menorTempo)
+  ;(print tmp)
     (dotimes (nrJob *nrJobs*)
       (block checkJob
         (dotimes (nrTask (job-nrTasks estado nrJob))
           (block checkTask
             (if (tarefa-hasStartTime? estado nrJob nrTask)
               (progn
-                (print "gay")
-                (setf tmp (get-startTimeOfTask nrJob nrTask)))
+                ;;(print "gay")
+                (setf tmp (get-startTimeOfTask estado nrJob nrTask)))
               (progn
-                (return-from checkJob t))))))
+                (return-from checkJob t)))))))
       (if (< tmp menorTempo)
         (setf menorTempo tmp))
-      (if (equalp tmp nil)
-        (return-from h4-menorTempoUltimaTarefa 0)))))
 
-
-
-(defun h5-maiorTempoUltimaTarefa (estado)
-  (let (( maiorTempo most-positive-fixnum)
-    (tmp 0))
-    (dotimes (nrJob *nrJobs*)
-      (block checkJob
-        (dotimes (nrTask (job-nrTasks estado nrJob))
-          (block checkTask
-            (if (tarefa-hasStartTime? estado nrJob nrTask)
-              (progn
-                (return-from checkTask t))
-              (progn
-                (if (eq nrTask 0)
-                  (setf tmp (get-startTimeOfTask estado nrJob nrTask))
-                  (setf tmp (get-startTimeOfTask estado nrJob (- nrTask 1))))
-                (if (> tmp maiorTempo)
-                  (setf maiorTempo tmp))
-                (return-from checkJob)))))))
-    maiorTempo))
+      menorTempo))
 
 ;;;TODO
   
@@ -489,8 +516,10 @@
         (setf resultado (procura (cria-problema estado (list 'gera-estados) :objectivo? #'fnc-objetivo :estado= #'estado-igual :hash #'hash :heuristica #'h4-menorTempoUltimaTarefa) "a*" :espaco-em-arvore? t) ))
     (if (equal procura "a*h5")
         (setf resultado (procura (cria-problema estado (list 'gera-estados) :objectivo? #'fnc-objetivo :estado= #'estado-igual :hash #'hash :heuristica #'h5-maiorTempoUltimaTarefa) "a*" :espaco-em-arvore? t) ))
-
-
+    (if (equal procura "a*h2-corte")
+        (setf resultado (procura (cria-problema estado (list 'gera-estados-corte) :objectivo? #'fnc-objetivo :estado= #'estado-igual :hash #'hash :heuristica #'h2-tempoEtarefas) "a*" :espaco-em-arvore? t) ))
+    (if (equal procura "a*h3-corte")
+        (setf resultado (procura (cria-problema estado (list 'gera-estados-corte) :objectivo? #'fnc-objetivo :estado= #'estado-igual :hash #'hash :heuristica #'h3-tempoDescontos) "a*" :espaco-em-arvore? t) ))
     resultado))      
 
     ;(actualiza-job-list (car (last (first resultado))))
