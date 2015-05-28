@@ -80,19 +80,7 @@
     (setf *prob-array* lista)
     lista))
 
-;(defun actualiza-job-list (estado)
- ; (let ((jobs (estado-getArrayJobs estado)))
-  ;  (dotimes (nrJob *nrJobs*)
-   ;   (dotimes (nrTask (length (aref jobs nrJob)))
-    ;    (setf (job-shop-task-start.time (nth nrTask (nth nrJob *job-list*))) (get-startTimeOfTask estado nrJob nrTask))))))
 
-;;TODO to test
-;(defun job-list-to-final ()
- ; (let ((lista '()))
-  ;  (dotimes (nrJob *nrJobs*)
-   ;   (setf lista (nconc (nth nrJob *job-list*) lista)))
-    ;(return-from job-list-to-final lista)))
- 
 
 
 
@@ -491,13 +479,13 @@
     (if (equal procura "profundidade")
         (setf resultado (procura (cria-problema estado (list 'gera-estados) :objectivo? #'fnc-objetivo :estado= #'estado-igual :hash #'hash) procura :espaco-em-arvore? t) ))
     (if (equal procura "sondagem.iterativa")
-        (setf resultado (last(random-probe estado #'gera-estados #'fnc-objetivo))))
+        (setf resultado (random-probe estado #'gera-estados #'fnc-objetivo)))
     (if (equal procura "sondagem.iterativa.optimizada")
-        (setf resultado (last (random-probe-optimized estado #'gera-estados #'fnc-objetivo))))
+        (setf resultado (random-probe-optimized estado #'gera-estados #'fnc-objetivo)))
     (if (equal procura "ILDS")
-        (setf resultado (last(ILDS estado (depth estado #'gera-estados) (depth estado #'gera-estados) #'gera-estados #'fnc-objetivo #'order-sucessors-h1))))
+        (setf resultado (ILDS estado (depth estado #'gera-estados) (depth estado #'gera-estados) #'gera-estados #'fnc-objetivo #'order-sucessors-h1)))
     (if (equal procura "ILDS-optimizado")
-        (setf resultado (last(ILDS-optimized estado (depth estado #'gera-estados) (depth estado #'gera-estados) #'gera-estados #'fnc-objetivo #'order-sucessors-h1))))
+        (setf resultado (ILDS-optimized estado (depth estado #'gera-estados) (depth estado #'gera-estados) #'gera-estados #'fnc-objetivo #'order-sucessors-h1)))
     (if (equal procura "a*")
         (setf resultado (procura (cria-problema estado (list 'gera-estados) :objectivo? #'fnc-objetivo :estado= #'estado-igual :hash #'hash :heuristica #'h1-maiorTempo) procura :espaco-em-arvore? t) ))
     (if (equal procura "ida*")
@@ -507,7 +495,7 @@
     (if (equal procura "ida*h2")
         (setf resultado (procura (cria-problema estado (list 'gera-estados) :objectivo? #'fnc-objetivo :estado= #'estado-igual :hash #'hash :heuristica #'h2-tempoEtarefas) "ida*" :espaco-em-arvore? t) ))
     (if (equal procura "abordagem.alternativa")
-        (abordagem-alternativa estado)) 
+        (setf resultado (abordagem-alternativa estado)))
     (if (equal procura "a*h3")
         (setf resultado (procura (cria-problema estado (list 'gera-estados) :objectivo? #'fnc-objetivo :estado= #'estado-igual :hash #'hash :heuristica #'h3-tempoDescontos) "a*" :espaco-em-arvore? t) ))
     (if (equal procura "ida*h3")
@@ -515,16 +503,34 @@
         ;(setf resultado (procura (cria-problema estado (list 'gera-estados) :objectivo? #'fnc-objetivo :estado= #'equalp :hash #'hash ) procura :espaco-em-arvore? t) ))
     (if (equal procura "a*h4")
         (setf resultado (procura (cria-problema estado (list 'gera-estados) :objectivo? #'fnc-objetivo :estado= #'estado-igual :hash #'hash :heuristica #'h4-menorTempoUltimaTarefa) "a*" :espaco-em-arvore? t) ))
-    (if (equal procura "a*h5")
-        (setf resultado (procura (cria-problema estado (list 'gera-estados) :objectivo? #'fnc-objetivo :estado= #'estado-igual :hash #'hash :heuristica #'h5-maiorTempoUltimaTarefa) "a*" :espaco-em-arvore? t) ))
     (if (equal procura "a*h2-corte")
         (setf resultado (procura (cria-problema estado (list 'gera-estados-corte) :objectivo? #'fnc-objetivo :estado= #'estado-igual :hash #'hash :heuristica #'h2-tempoEtarefas) "a*" :espaco-em-arvore? t) ))
     (if (equal procura "a*h3-corte")
         (setf resultado (procura (cria-problema estado (list 'gera-estados-corte) :objectivo? #'fnc-objetivo :estado= #'estado-igual :hash #'hash :heuristica #'h3-tempoDescontos) "a*" :espaco-em-arvore? t) ))
-    resultado))      
+    (job-list-to-final (actualiza-job-list (resultado-procura-to-estado resultado)))))
+   
 
     ;(actualiza-job-list (car (last (first resultado))))
     ;(return-from calendarizacao (job-list-to-final))))
+
+;;tested
+(defun actualiza-job-list (estado)
+  (let ((jobs (estado-getArrayJobs estado)))
+    (dotimes (nrJob *nrJobs*)
+      (dotimes (nrTask (job-nrTasks estado nrJob))
+        (setf (job-shop-task-start.time (gethash nrTask (gethash nrJob *job-list*))) (get-startTimeOfTask estado nrJob nrTask))))
+    estado))
+
+;;TODO to test
+(defun job-list-to-final (estado)
+  (let ((lista '()))
+    (dotimes (nrJob *nrJobs*)
+      (dotimes (nrTask (job-nrTasks estado nrJob))
+        (push (gethash nrTask (gethash nrJob *job-list*)) lista)))
+    (reverse lista)))
+ 
+
+
 
 ;;TODO see if these numbers work
 (defun nrTasksIteration (jobs)
@@ -565,7 +571,7 @@
       (setf resultado (resultado-procura-to-estado resultadoP))
       (actualiza-estado-com-alternativo estado resultado iterationNr nrTasksInIteration))
      ; (print estado))
-    (return-from abordagem-alternativa estado)
+    (return-from abordagem-alternativa (list (list nil nil estado) nil nil nil))
      ;; (setf estadoAlt (cria-estado-alternativo estado iterationNr nrTasksInIteration))
       ;;chamar procura
       ;;guardar resultado  
